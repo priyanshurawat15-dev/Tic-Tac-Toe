@@ -623,10 +623,29 @@ class TicTacToeGame {
             this.player2Pieces += 1;
         }
 
-        if (this.checkWinner()) {
-            this.endGame();
-            return;
-        }
+        
+        const isWinner = this.checkWinner();
+
+if (this.gameMode === GameMode.ONLINE) {
+    this.network.makeMove({
+        type: 'place',
+        row,
+        col,
+        player: movingPlayer,
+        nextPlayer: this.currentPlayer,
+        phase: this.phase,
+        player1Pieces: this.player1Pieces,
+        player2Pieces: this.player2Pieces
+    });
+    this.pushStateSync();
+}
+
+if (isWinner) {
+    this.endGame();
+    return;
+}
+
+
 
         if (this.player1Pieces === 3 && this.player2Pieces === 3) {
             this.phase = GamePhase.MOVEMENT;
@@ -745,10 +764,26 @@ class TicTacToeGame {
         this.soundManager.playMove();
         this.deselectPiece();
 
-        if (this.checkWinner()) {
-            this.endGame();
-            return;
-        }
+        
+        const isWinner = this.checkWinner();
+
+if (this.gameMode === GameMode.ONLINE) {
+    this.network.makeMove({
+        type: 'move',
+        from: { row: oldRow, col: oldCol },
+        to: { row: newRow, col: newCol },
+        player: movingPlayer,
+        nextPlayer: this.currentPlayer,
+        phase: this.phase
+    });
+    this.pushStateSync();
+}
+
+if (isWinner) {
+    this.endGame();
+    return;
+}
+
 
         this.currentPlayer = movingPlayer === Player.X ? Player.O : Player.X;
 
@@ -836,7 +871,7 @@ class TicTacToeGame {
         this.soundManager.playWin();
 
 
-        
+
         if (this.gameMode === "offline") {
   // simple logic: X jeeta to O hara
   if (this.currentPlayer === "X") {
