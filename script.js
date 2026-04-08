@@ -1,3 +1,8 @@
+
+
+const winSound = new Audio("sounds/win.mp3");
+const loseSound = new Audio("sounds/lose.mp3");
+
 const GamePhase = {
     PLACEMENT: 'placement',
     MOVEMENT: 'movement'
@@ -830,6 +835,26 @@ class TicTacToeGame {
         this.highlightWinningLine();
         this.soundManager.playWin();
 
+
+        
+        if (this.gameMode === "offline") {
+  // simple logic: X jeeta to O hara
+  if (this.currentPlayer === "X") {
+    winSound.play();
+  } else {
+    loseSound.play();
+  }
+} else {
+  // online me check karo player ka symbol
+  if (this.currentPlayer === this.playerSymbol) {
+    winSound.play();
+  } else {
+    loseSound.play();
+  }
+}
+
+
+
         setTimeout(() => {
             this.showWinnerModal();
         }, 600);
@@ -1078,4 +1103,17 @@ class TicTacToeGame {
 
 document.addEventListener('DOMContentLoaded', () => {
     new TicTacToeGame();
+});
+
+const themeBtn = document.querySelector(".theme-btn");
+const themeLabel = document.querySelector(".theme-label");
+
+themeBtn.addEventListener("click", () => {
+  document.body.classList.toggle("light-mode");
+
+  if (document.body.classList.contains("light-mode")) {
+    themeLabel.textContent = "Light Mode";
+  } else {
+    themeLabel.textContent = "Dark Mode";
+  }
 });
