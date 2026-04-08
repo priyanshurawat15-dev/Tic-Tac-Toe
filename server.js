@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
 });
 
 // Create WebSocket server
-const wss = new WebSocket.Server({ port: 8080 });
+const wss = new WebSocket.Server({ server });
 
 // Game room management
 const rooms = new Map();
@@ -213,6 +213,8 @@ console.log('HTTP server started on port 3000');
 console.log('Open http://localhost:3000 to play the game!');
 
 // Start HTTP server
-server.listen(3000, () => {
-    console.log('Game server running!');
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
 });
