@@ -86,6 +86,10 @@ class NetworkManager {
         this.connectionPromise = null;
     }
 
+    getHttpBaseUrl() {
+        return window.location.origin;
+    }
+
     getServerUrl() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         return `${protocol}//${window.location.host}`;
@@ -189,6 +193,42 @@ class NetworkManager {
             roomId: this.roomId
         });
     }
+
+    async syncState(state) {
+        if (!this.roomId) {
+            return null;
+        }
+
+        const response = await fetch(`${this.getHttpBaseUrl()}/api/room/${this.roomId}/state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ state })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to sync state');
+        }
+
+        return response.json();
+    }
+
+    async fetchState(roomId = this.roomId) {
+        if (!roomId) {
+            return null;
+        }
+
+        const response = await fetch(`${this.getHttpBaseUrl()}/api/room/${roomId}/state`, {
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch room state');
+        }
+
+        return response.json();
+    }
 }
 
 class TicTacToeGame {
@@ -210,6 +250,8 @@ class TicTacToeGame {
             X: 'Player X',
             O: 'Player O'
         };
+        this.lastSyncedRevision = 0;
+        this.statePollInterval = null;
 
         this.network = new NetworkManager();
         this.soundManager = new SoundManager();
@@ -338,13 +380,16 @@ class TicTacToeGame {
                 this.handleRoomJoined(data.roomId, data.playerSymbol, data.players);
                 break;
             case 'game_start':
-                this.handleGameStart(data.playerSymbol, data.players);
+                this.handleGameStart(data.playerSymbol, data.players, data.state);
                 break;
             case 'move_made':
                 this.handleOpponentMove(data.move);
                 break;
             case 'game_restart':
-                this.handleGameRestart();
+                this.handleGameRestart(data.state);
+                break;
+            case 'state_sync':
+                this.handleStateSync(data.state, data.players);
                 break;
             case 'opponent_disconnected':
                 this.handleOpponentDisconnected();
@@ -358,6 +403,8 @@ class TicTacToeGame {
     startOfflineGame() {
         this.gameMode = GameMode.OFFLINE;
         this.playerSymbol = null;
+        this.stopStatePolling();
+        this.lastSyncedRevision = 0;
         this.players = {
             X: 'Player X',
             O: 'Player O'
@@ -463,16 +510,20 @@ class TicTacToeGame {
         this.setRoomFeedback(`Joined room ${roomId}. Starting match...`, 'success');
     }
 
-    handleGameStart(playerSymbol, players = this.players) {
+    handleGameStart(playerSymbol, players = this.players, state = null) {
         this.playerSymbol = playerSymbol;
         this.network.playerSymbol = playerSymbol;
         this.players = { ...this.players, ...players };
         this.gameMode = GameMode.ONLINE;
         this.resetGame();
+        if (state) {
+            this.applyServerState(state);
+        }
         this.showScreen('game-screen');
         this.updateGameModeDisplay();
         document.getElementById('waiting-room').classList.add('hidden');
         document.getElementById('room-id-display').classList.add('hidden');
+        this.startStatePolling();
     }
 
     handleServerError(message) {
@@ -493,10 +544,12 @@ class TicTacToeGame {
     }
 
     leaveRoom() {
+        this.stopStatePolling();
         this.network.disconnect();
         this.gameMode = GameMode.OFFLINE;
         this.roomId = null;
         this.playerSymbol = null;
+        this.lastSyncedRevision = 0;
         this.resetRoomUI();
         this.showScreen('menu-screen');
     }
@@ -587,6 +640,7 @@ class TicTacToeGame {
                 player1Pieces: this.player1Pieces,
                 player2Pieces: this.player2Pieces
             });
+            this.pushStateSync();
         }
 
         this.updateUI();
@@ -702,6 +756,7 @@ class TicTacToeGame {
                 nextPlayer: this.currentPlayer,
                 phase: this.phase
             });
+            this.pushStateSync();
         }
 
         this.updateUI();
@@ -795,8 +850,11 @@ class TicTacToeGame {
         this.resetGame();
     }
 
-    handleGameRestart() {
+    handleGameRestart(state = null) {
         this.resetGame();
+        if (state) {
+            this.applyServerState(state);
+        }
     }
 
     resetGame() {
@@ -815,6 +873,112 @@ class TicTacToeGame {
         });
 
         this.updateUI();
+    }
+
+    getSerializableState() {
+        return {
+            board: this.board.map((row) => [...row]),
+            currentPlayer: this.currentPlayer,
+            phase: this.phase,
+            player1Pieces: this.player1Pieces,
+            player2Pieces: this.player2Pieces,
+            gameOver: this.gameOver,
+            winningLine: this.winningLine.map((line) => [...line])
+        };
+    }
+
+    applyServerState(state) {
+        if (!state || !Array.isArray(state.board)) {
+            return;
+        }
+
+        this.board = state.board.map((row) => [...row]);
+        this.currentPlayer = state.currentPlayer;
+        this.phase = state.phase;
+        this.player1Pieces = state.player1Pieces;
+        this.player2Pieces = state.player2Pieces;
+        this.gameOver = Boolean(state.gameOver);
+        this.winningLine = Array.isArray(state.winningLine) ? state.winningLine.map((line) => [...line]) : [];
+        this.lastSyncedRevision = Math.max(this.lastSyncedRevision, state.revision || 0);
+        this.selectedPiece = null;
+        this.renderBoard();
+        this.updateUI();
+
+        if (this.gameOver && this.winningLine.length > 0) {
+            this.highlightWinningLine();
+        }
+    }
+
+    renderBoard() {
+        document.querySelectorAll('.cell').forEach((cell) => {
+            const row = Number.parseInt(cell.dataset.row, 10);
+            const col = Number.parseInt(cell.dataset.col, 10);
+            const value = this.board[row][col];
+
+            cell.textContent = value || '';
+            cell.classList.remove('occupied', 'x-piece', 'o-piece', 'selected', 'valid-move', 'winning');
+
+            if (value) {
+                cell.classList.add('occupied', `${value.toLowerCase()}-piece`);
+            }
+        });
+    }
+
+    async pushStateSync() {
+        try {
+            const result = await this.network.syncState(this.getSerializableState());
+            if (result?.revision) {
+                this.lastSyncedRevision = result.revision;
+            }
+        } catch (error) {
+            console.error('State sync failed', error);
+        }
+    }
+
+    async pollLatestState() {
+        if (this.gameMode !== GameMode.ONLINE || !this.roomId) {
+            return;
+        }
+
+        try {
+            const payload = await this.network.fetchState(this.roomId);
+            if (!payload?.state) {
+                return;
+            }
+
+            this.players = { ...this.players, ...(payload.players || {}) };
+
+            if ((payload.state.revision || 0) > this.lastSyncedRevision) {
+                this.applyServerState(payload.state);
+            }
+        } catch (error) {
+            console.error('State poll failed', error);
+        }
+    }
+
+    startStatePolling() {
+        this.stopStatePolling();
+        this.pollLatestState();
+        this.statePollInterval = window.setInterval(() => {
+            this.pollLatestState();
+        }, 1200);
+    }
+
+    stopStatePolling() {
+        if (this.statePollInterval) {
+            window.clearInterval(this.statePollInterval);
+            this.statePollInterval = null;
+        }
+    }
+
+    handleStateSync(state, players = null) {
+        if (players) {
+            this.players = { ...this.players, ...players };
+        }
+
+        if ((state?.revision || 0) > this.lastSyncedRevision) {
+            this.applyServerState(state);
+        }
     }
 
     updateUI() {
@@ -885,12 +1049,14 @@ class TicTacToeGame {
 
     backToMenu() {
         if (this.gameMode === GameMode.ONLINE) {
+            this.stopStatePolling();
             this.network.disconnect();
         }
 
         this.gameMode = GameMode.OFFLINE;
         this.roomId = null;
         this.playerSymbol = null;
+        this.lastSyncedRevision = 0;
         this.players = {
             X: 'Player X',
             O: 'Player O'

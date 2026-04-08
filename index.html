@@ -5,34 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strategic Tic-Tac-Toe - Multiplayer</title>
     <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
 </head>
 <body>
     <div class="app-container">
         <!-- Menu Screen -->
         <div id="menu-screen" class="screen active">
             <div class="menu-content">
-                <header>
-                    <h1>Strategic Tic-Tac-Toe</h1>
-                    <p>Place 3 pieces, then move them strategically!</p>
+                <div class="menu-grid-pattern" aria-hidden="true"></div>
+                <header class="menu-hero">
+                    <div class="menu-topbar">
+                        <div class="menu-badge">
+                            <span class="badge-dot"></span>
+                            <span>Strategy Game</span>
+                        </div>
+                        <button class="theme-btn" type="button" aria-label="Theme preview">
+                            <span class="theme-btn-core"></span>
+                        </button>
+                    </div>
+                    <div class="hero-copy">
+                        <h1>Strategic <span>Tic-Tac-Toe</span></h1>
+                        <p>Place 3 pieces, then move them strategically to win!</p>
+                    </div>
                 </header>
-                
+
                 <div class="menu-actions">
                     <div class="primary-actions">
                         <button id="offline-btn" class="menu-btn primary">
-                            
-                            <span class="btn-text">Local Game</span>
+                            <span class="menu-btn-icon">LG</span>
+                            <span class="menu-btn-copy">
+                                <span class="btn-text">Local Game</span>
+                                <span class="btn-subtext">Play with a friend on the same device</span>
+                            </span>
+                            <span class="menu-btn-arrow">&rsaquo;</span>
                         </button>
                         <button id="online-btn" class="menu-btn secondary">
-                            
-                            <span class="btn-text">Online Multiplayer</span>
+                            <span class="menu-btn-icon">ON</span>
+                            <span class="menu-btn-copy">
+                                <span class="btn-text">Online Multiplayer</span>
+                                <span class="btn-subtext">Challenge friends and sync live moves</span>
+                            </span>
+                            <span class="menu-btn-arrow">&rsaquo;</span>
                         </button>
-                    </div>
-                    <div class="secondary-actions">
                         <button id="help-menu-btn" class="menu-btn tertiary">
-                            
-                            <span class="btn-text">How to Play</span>
+                            <span class="menu-btn-icon">HP</span>
+                            <span class="menu-btn-copy">
+                                <span class="btn-text">How to Play</span>
+                                <span class="btn-subtext">Learn the rules and smart strategies</span>
+                            </span>
+                            <span class="menu-btn-arrow">&rsaquo;</span>
                         </button>
                     </div>
+
+                    <div class="menu-feature-strip">
+                        <div class="feature-card">
+                            <span class="feature-icon">01</span>
+                            <strong>Strategic</strong>
+                            <p>Plan every move</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">02</span>
+                            <strong>Competitive</strong>
+                            <p>Outsmart opponents</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">03</span>
+                            <strong>Fun</strong>
+                            <p>Enjoy every match</p>
+                        </div>
+                    </div>
+
+                    
                 </div>
             </div>
         </div>
@@ -112,7 +158,7 @@
                     <div class="game-info">
                         <div class="status">
                             <span id="current-player">Player X's Turn</span>
-                            <span id="phase-indicator">Placement Phase</span>
+                            <span id="phase-indicator">Starting Phase</span>
                         </div>
                         <div class="score">
                             <div class="player-score">
@@ -182,6 +228,35 @@
                 <button id="close-help-btn" class="btn">Got it!</button>
             </div>
         </div>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 All Rights Reserved</p>
+            <p>Designed by Priyanshu Rawat | March 2026</p>
+            <div class="footer-socials" aria-label="Social links preview">
+    
+    <div class="footer-socials" aria-label="Social links preview">
+
+    <a href="https://github.com/priyanshurawat15-dev" target="_blank" class="social-chip">
+        <i class="fab fa-github"></i>
+    </a>
+
+    <a href="https://www.linkedin.com/in/priyanshurawat15/" target="_blank" class="social-chip">
+        <i class="fab fa-linkedin"></i>
+    </a>
+
+    <a href="https://instagram.com/priyanshurawat_15" target="_blank" class="social-chip">
+        <i class="fab fa-instagram"></i>
+    </a>
+
+    <a href="mailto:priyanshurwt28@gmail.com" class="social-chip">
+        <i class="fas fa-envelope"></i>
+    </a>
+
+</div>
+
+</div>
+        </footer>
+        
     </div>
 
     <script src="script.js"></script>
