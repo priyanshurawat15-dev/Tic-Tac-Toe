@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Tic-Tac-Toe - Multiplayer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <div class="menu-content">
+                <header>
+                    <h1>Strategic Tic-Tac-Toe</h1>
+                    <p>Place 3 pieces, then move them strategically!</p>
+                </header>
+                
+                <div class="menu-actions">
+                    <div class="primary-actions">
+                        <button id="offline-btn" class="menu-btn primary">
+                            
+                            <span class="btn-text">Local Game</span>
+                        </button>
+                        <button id="online-btn" class="menu-btn secondary">
+                            
+                            <span class="btn-text">Online Multiplayer</span>
+                        </button>
+                    </div>
+                    <div class="secondary-actions">
+                        <button id="help-menu-btn" class="menu-btn tertiary">
+                            
+                            <span class="btn-text">How to Play</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Online Room Screen -->
+        <div id="room-screen" class="screen">
+            <div class="room-content">
+                <header>
+                    <h2>Online Multiplayer</h2>
+                    <button id="back-to-menu" class="back-btn">Back</button>
+                </header>
+                
+                <div class="room-options">
+                    <div class="create-room">
+                        <h3>Create Room</h3>
+                        <button id="create-room-btn" class="btn">Create New Room</button>
+                        <div id="room-id-display" class="room-id hidden">
+                            <p>Room ID: <span id="generated-room-id"></span></p>
+                            <p>Share this ID with your friend!</p>
+                            <button id="copy-room-btn" class="btn small">Copy ID</button>
+                        </div>
+                    </div>
+                    
+                    <div class="join-room">
+                        <h3>Join Room</h3>
+                        <input type="text" id="room-id-input" placeholder="Enter Room ID" maxlength="6">
+                        <button id="join-room-btn" class="btn">Join Room</button>
+                    </div>
+                </div>
+                
+                <div id="waiting-room" class="waiting-room hidden">
+                    <h3>Waiting for opponent...</h3>
+                    <div class="loading-spinner"></div>
+                    <p>Room ID: <span id="waiting-room-id"></span></p>
+                    <button id="leave-room-btn" class="btn secondary">Leave Room</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-container">
+                <header>
+                    <div class="game-header">
+                        <button id="back-to-menu-game" class="back-btn">Menu</button>
+                        <div class="game-mode-indicator">
+                            <span id="game-mode">Local Game</span>
+                        </div>
+                        <button id="restart-btn" class="btn small">Restart</button>
+                    </div>
+                </header>
+
+                <main>
+                    <div class="game-info">
+                        <div class="status">
+                            <span id="current-player">Player X's Turn</span>
+                            <span id="phase-indicator">Placement Phase</span>
+                        </div>
+                        <div class="score">
+                            <div class="player-score">
+                                <span class="player-x">X</span>
+                                <span id="x-pieces">0/3</span>
+                            </div>
+                            <div class="player-score">
+                                <span class="player-o">O</span>
+                                <span id="o-pieces">0/3</span>
+                            </div>
+                        </div>
+                        <div class="connection-status" id="connection-status">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Connected</span>
+                        </div>
+                    </div>
+
+                    <div class="game-board" id="game-board">
+                        <div class="cell" data-row="0" data-col="0"></div>
+                        <div class="cell" data-row="0" data-col="1"></div>
+                        <div class="cell" data-row="0" data-col="2"></div>
+                        <div class="cell" data-row="1" data-col="0"></div>
+                        <div class="cell" data-row="1" data-col="1"></div>
+                        <div class="cell" data-row="1" data-col="2"></div>
+                        <div class="cell" data-row="2" data-col="0"></div>
+                        <div class="cell" data-row="2" data-col="1"></div>
+                        <div class="cell" data-row="2" data-col="2"></div>
+                    </div>
+
+                    <div class="game-controls">
+                        <button id="help-btn" class="btn">How to Play</button>
+                        <button id="sound-toggle" class="btn small">Sound: ON</button>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Winner Modal -->
+        <div id="winner-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="winner-text">Player X Wins!</h2>
+                <div class="winner-actions">
+                    <button id="modal-restart-btn" class="btn primary">Play Again</button>
+                    <button id="modal-menu-btn" class="btn secondary">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>How to Play</h2>
+                <div class="rules">
+                    <h3>Phase 1: Placement</h3>
+                    <p>Each player places exactly 3 pieces on the board, taking turns.</p>
+                    
+                    <h3>Phase 2: Movement</h3>
+                    <p>Players take turns moving their pieces to adjacent empty cells.</p>
+                    <p><strong>Movement includes all 8 directions:</strong> up, down, left, right, and all 4 diagonals.</p>
+                    
+                    <h3>Winning</h3>
+                    <p>Get 3 of your pieces in a row (horizontal, vertical, or diagonal) to win!</p>
+                    
+                    <h3>Online Play</h3>
+                    <p>Create a room and share the ID, or join a friend's room to play online.</p>
+                </div>
+                <button id="close-help-btn" class="btn">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "strategic-tic-tac-toe",
+  "version": "1.0.0",
+  "description": "A strategic Tic-Tac-Toe game with online multiplayer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "keywords": [
+    "tic-tac-toe",
+    "game",
+    "multiplayer",
+    "websocket"
+  ],
+  "author": "Game Developer",
+  "license": "MIT"
+}
