@@ -41,13 +41,31 @@
         <div id="room-screen" class="screen">
             <div class="room-content">
                 <header>
-                    <h2>Online Multiplayer</h2>
+                    <div class="room-header-copy">
+                        <p class="eyebrow">Live Matchmaking</p>
+                        <h2>Online Multiplayer</h2>
+                        <p class="room-subtitle">Pick a name, create a room, or join your friend's code.</p>
+                    </div>
                     <button id="back-to-menu" class="back-btn">Back</button>
                 </header>
-                
+
+                <div class="room-status-panel">
+                    <div class="name-field">
+                        <label for="player-name-input">Your Name</label>
+                        <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20">
+                    </div>
+                    <div id="room-feedback" class="room-feedback" aria-live="polite">
+                        Enter your name before creating or joining a room.
+                    </div>
+                </div>
+
                 <div class="room-options">
-                    <div class="create-room">
-                        <h3>Create Room</h3>
+                    <div class="create-room room-card">
+                        <div class="room-card-copy">
+                            <p class="room-card-label">Host</p>
+                            <h3>Create Room</h3>
+                            <p>Generate a room code and wait for your friend to hop in.</p>
+                        </div>
                         <button id="create-room-btn" class="btn">Create New Room</button>
                         <div id="room-id-display" class="room-id hidden">
                             <p>Room ID: <span id="generated-room-id"></span></p>
@@ -56,8 +74,12 @@
                         </div>
                     </div>
                     
-                    <div class="join-room">
-                        <h3>Join Room</h3>
+                    <div class="join-room room-card">
+                        <div class="room-card-copy">
+                            <p class="room-card-label">Guest</p>
+                            <h3>Join Room</h3>
+                            <p>Paste the custom code your friend shared and enter the lobby.</p>
+                        </div>
                         <input type="text" id="room-id-input" placeholder="Enter Room ID" maxlength="6">
                         <button id="join-room-btn" class="btn">Join Room</button>
                     </div>
@@ -66,6 +88,7 @@
                 <div id="waiting-room" class="waiting-room hidden">
                     <h3>Waiting for opponent...</h3>
                     <div class="loading-spinner"></div>
+                    <p class="waiting-names"><span id="waiting-player-name"></span> is ready for a match.</p>
                     <p>Room ID: <span id="waiting-room-id"></span></p>
                     <button id="leave-room-btn" class="btn secondary">Leave Room</button>
                 </div>

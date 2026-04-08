@@ -1,24 +1,18 @@
-// Simple WebSocket Server for Tic-Tac-Toe Multiplayer
-// Run with: node server.js
-
 const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Create HTTP server for serving static files
 const server = http.createServer((req, res) => {
-    const filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+    const requestPath = req.url === '/' ? 'index.html' : req.url;
+    const filePath = path.join(__dirname, requestPath);
     const extname = path.extname(filePath);
-    let contentType = 'text/html';
 
-    switch (extname) {
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.css':
-            contentType = 'text/css';
-            break;
+    let contentType = 'text/html';
+    if (extname === '.js') {
+        contentType = 'text/javascript';
+    } else if (extname === '.css') {
+        contentType = 'text/css';
     }
 
     fs.readFile(filePath, (error, content) => {
@@ -26,52 +20,68 @@ const server = http.createServer((req, res) => {
             if (error.code === 'ENOENT') {
                 res.writeHead(404);
                 res.end('File not found');
-            } else {
-                res.writeHead(500);
-                res.end('Server error');
+                return;
             }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
+
+            res.writeHead(500);
+            res.end('Server error');
+            return;
         }
+
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(content, 'utf-8');
     });
 });
 
-// Create WebSocket server
 const wss = new WebSocket.Server({ server });
 
-// Game room management
 const rooms = new Map();
 const playerSockets = new Map();
 
-// Generate random room ID
 function generateRoomId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
-    for (let i = 0; i < 6; i++) {
+
+    for (let index = 0; index < 6; index += 1) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+
     return result;
 }
 
-// Broadcast to all players in a room
-function broadcastToRoom(roomId, message, excludeSocket = null) {
-    const room = rooms.get(roomId);
-    if (room) {
-        room.players.forEach(playerSocket => {
-            if (playerSocket !== excludeSocket && playerSocket.readyState === WebSocket.OPEN) {
-                playerSocket.send(JSON.stringify(message));
-            }
-        });
+function sanitizePlayerName(name) {
+    return String(name || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+}
+
+function sendMessage(socket, message) {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message));
     }
 }
 
-// Handle WebSocket connections
+function buildPlayersPayload(room) {
+    const payload = {};
+    room.players.forEach((player) => {
+        payload[player.symbol] = player.name;
+    });
+    return payload;
+}
+
+function broadcastToRoom(roomId, message, excludeSocket = null) {
+    const room = rooms.get(roomId);
+    if (!room) {
+        return;
+    }
+
+    room.players.forEach((player) => {
+        if (player.socket !== excludeSocket && player.socket.readyState === WebSocket.OPEN) {
+            player.socket.send(JSON.stringify(message));
+        }
+    });
+}
+
 wss.on('connection', (ws) => {
     console.log('New client connected');
-    
-    let currentRoom = null;
-    let playerSymbol = null;
 
     ws.on('message', (data) => {
         try {
@@ -79,128 +89,165 @@ wss.on('connection', (ws) => {
             console.log('Received:', message);
 
             switch (message.type) {
-                case 'create_room':
-                    const roomId = generateRoomId();
-                    
-                    // Create new room
-                    rooms.set(roomId, {
-                        players: [ws],
-                        gameState: null,
-                        playerSymbols: { [ws]: 'X' }
-                    });
-                    
-                    currentRoom = roomId;
-                    playerSymbol = 'X';
-                    playerSockets.set(ws, { roomId, symbol: 'X' });
-                    
-                    ws.send(JSON.stringify({
-                        type: 'room_created',
-                        roomId
-                    }));
-                    
-                    console.log(`Room ${roomId} created`);
-                    break;
+                case 'create_room': {
+                    const playerName = sanitizePlayerName(message.playerName);
 
-                case 'join_room':
-                    const room = rooms.get(message.roomId);
-                    
-                    if (room && room.players.length === 1) {
-                        // Join existing room
-                        room.players.push(ws);
-                        currentRoom = message.roomId;
-                        playerSymbol = 'O';
-                        playerSockets.set(ws, { roomId: message.roomId, symbol: 'O' });
-                        room.playerSymbols[ws] = 'O';
-                        
-                        // Notify both players that game can start
-                        ws.send(JSON.stringify({
-                            type: 'room_joined',
-                            roomId: message.roomId,
-                            playerSymbol: 'O'
-                        }));
-                        
-                        // Notify room creator
-                        room.players[0].send(JSON.stringify({
-                            type: 'room_joined',
-                            roomId: message.roomId,
-                            playerSymbol: 'X'
-                        }));
-                        
-                        // Start game for both players
-                        setTimeout(() => {
-                            room.players.forEach((playerSocket, index) => {
-                                playerSocket.send(JSON.stringify({
-                                    type: 'game_start',
-                                    playerSymbol: index === 0 ? 'X' : 'O'
-                                }));
-                            });
-                        }, 500);
-                        
-                        console.log(`Player joined room ${message.roomId}`);
-                    } else {
-                        ws.send(JSON.stringify({
+                    if (!playerName) {
+                        sendMessage(ws, {
                             type: 'error',
-                            message: 'Room not found or full'
-                        }));
-                    }
-                    break;
-
-                case 'move':
-                    const moveRoom = rooms.get(message.roomId);
-                    if (moveRoom) {
-                        // Broadcast move to opponent
-                        broadcastToRoom(message.roomId, {
-                            type: 'move_made',
-                            move: message.move
-                        }, ws);
-                    }
-                    break;
-
-                case 'restart':
-                    const restartRoom = rooms.get(message.roomId);
-                    if (restartRoom) {
-                        broadcastToRoom(message.roomId, {
-                            type: 'game_restart'
+                            message: 'Please enter your name before creating a room.'
                         });
+                        return;
                     }
+
+                    let roomId = generateRoomId();
+                    while (rooms.has(roomId)) {
+                        roomId = generateRoomId();
+                    }
+
+                    const room = {
+                        players: [
+                            {
+                                socket: ws,
+                                symbol: 'X',
+                                name: playerName
+                            }
+                        ]
+                    };
+
+                    rooms.set(roomId, room);
+                    playerSockets.set(ws, { roomId, symbol: 'X', name: playerName });
+
+                    sendMessage(ws, {
+                        type: 'room_created',
+                        roomId,
+                        players: buildPlayersPayload(room)
+                    });
+
+                    console.log(`Room ${roomId} created by ${playerName}`);
                     break;
+                }
+
+                case 'join_room': {
+                    const roomId = String(message.roomId || '').toUpperCase();
+                    const playerName = sanitizePlayerName(message.playerName);
+                    const room = rooms.get(roomId);
+
+                    if (!playerName) {
+                        sendMessage(ws, {
+                            type: 'error',
+                            message: 'Please enter your name before joining a room.'
+                        });
+                        return;
+                    }
+
+                    if (!room) {
+                        sendMessage(ws, {
+                            type: 'error',
+                            message: 'Room not found. Check the code and try again.'
+                        });
+                        return;
+                    }
+
+                    if (room.players.length >= 2) {
+                        sendMessage(ws, {
+                            type: 'error',
+                            message: 'That room is already full.'
+                        });
+                        return;
+                    }
+
+                    room.players.push({
+                        socket: ws,
+                        symbol: 'O',
+                        name: playerName
+                    });
+
+                    playerSockets.set(ws, { roomId, symbol: 'O', name: playerName });
+
+                    const players = buildPlayersPayload(room);
+
+                    room.players.forEach((player) => {
+                        sendMessage(player.socket, {
+                            type: 'room_joined',
+                            roomId,
+                            playerSymbol: player.symbol,
+                            players
+                        });
+                    });
+
+                    room.players.forEach((player) => {
+                        sendMessage(player.socket, {
+                            type: 'game_start',
+                            playerSymbol: player.symbol,
+                            players
+                        });
+                    });
+
+                    console.log(`${playerName} joined room ${roomId}`);
+                    break;
+                }
+
+                case 'move': {
+                    const room = rooms.get(message.roomId);
+                    if (!room) {
+                        return;
+                    }
+
+                    broadcastToRoom(message.roomId, {
+                        type: 'move_made',
+                        move: message.move
+                    }, ws);
+                    break;
+                }
+
+                case 'restart': {
+                    const room = rooms.get(message.roomId);
+                    if (!room) {
+                        return;
+                    }
+
+                    broadcastToRoom(message.roomId, {
+                        type: 'game_restart'
+                    });
+                    break;
+                }
 
                 default:
                     console.log('Unknown message type:', message.type);
             }
         } catch (error) {
             console.error('Error processing message:', error);
+            sendMessage(ws, {
+                type: 'error',
+                message: 'The server could not process that request.'
+            });
         }
     });
 
     ws.on('close', () => {
         console.log('Client disconnected');
-        
-        // Clean up room and notify opponent
+
         const socketInfo = playerSockets.get(ws);
-        if (socketInfo) {
-            const room = rooms.get(socketInfo.roomId);
-            if (room) {
-                // Notify remaining player
+        if (!socketInfo) {
+            return;
+        }
+
+        const room = rooms.get(socketInfo.roomId);
+        if (room) {
+            room.players = room.players.filter((player) => player.socket !== ws);
+
+            if (room.players.length > 0) {
                 broadcastToRoom(socketInfo.roomId, {
                     type: 'opponent_disconnected'
                 });
-                
-                // Remove room or player
-                const playerIndex = room.players.indexOf(ws);
-                if (playerIndex > -1) {
-                    room.players.splice(playerIndex, 1);
-                }
-                
-                // Delete room if empty
-                if (room.players.length === 0) {
-                    rooms.delete(socketInfo.roomId);
-                    console.log(`Room ${socketInfo.roomId} deleted`);
-                }
+            } else {
+                rooms.delete(socketInfo.roomId);
+                console.log(`Room ${socketInfo.roomId} deleted`);
             }
-            
-            playerSockets.delete(ws);
         }
+
+        playerSockets.delete(ws);
     });
 
     ws.on('error', (error) => {
@@ -208,13 +255,8 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log('WebSocket server started on port 8080');
-console.log('HTTP server started on port 3000');
-console.log('Open http://localhost:3000 to play the game!');
-
-// Start HTTP server
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
+    console.log(`HTTP and WebSocket server running on port ${PORT}`);
 });

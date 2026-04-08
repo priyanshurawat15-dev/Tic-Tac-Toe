@@ -278,8 +278,9 @@ body::before {
 .room-content header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 36px;
+    gap: 20px;
 }
 
 .room-content header h2 {
@@ -291,6 +292,27 @@ body::before {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     letter-spacing: -0.02em;
+}
+
+.room-header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eyebrow {
+    font-size: 0.78em;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--secondary-color);
+}
+
+.room-subtitle {
+    color: var(--gray);
+    line-height: 1.6;
+    max-width: 320px;
+    font-weight: 500;
 }
 
 .back-btn {
@@ -319,20 +341,87 @@ body::before {
     gap: 36px;
 }
 
-.create-room, .join-room {
-    text-align: center;
-    padding: 24px;
-    background: var(--lighter);
+.room-status-panel {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding: 20px;
+    border-radius: var(--border-radius-lg);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(79, 70, 229, 0.06));
+    border: 1px solid rgba(79, 70, 229, 0.12);
+}
+
+.name-field {
+    display: grid;
+    gap: 10px;
+}
+
+.name-field label {
+    font-size: 0.95em;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.room-feedback {
+    border-radius: var(--border-radius);
+    padding: 14px 16px;
+    font-size: 0.95em;
+    font-weight: 600;
+    line-height: 1.5;
+    background: rgba(79, 70, 229, 0.08);
+    color: var(--primary-dark);
+}
+
+.room-feedback[data-tone="success"] {
+    background: rgba(34, 197, 94, 0.12);
+    color: #166534;
+}
+
+.room-feedback[data-tone="error"] {
+    background: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+}
+
+.room-card {
+    text-align: left;
+    padding: 28px;
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.9));
     border-radius: var(--border-radius-lg);
     border: 1px solid var(--light);
+    box-shadow: var(--shadow);
+}
+
+.room-card-copy {
+    margin-bottom: 18px;
+}
+
+.room-card-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(6, 182, 212, 0.12);
+    color: #0f766e;
+    font-size: 0.78em;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
 }
 
 .create-room h3, .join-room h3 {
     font-size: 1.375em;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     color: var(--dark);
     letter-spacing: -0.01em;
+}
+
+.create-room p,
+.join-room p {
+    color: var(--gray);
+    line-height: 1.6;
+    font-weight: 500;
 }
 
 .room-id {
@@ -362,31 +451,43 @@ body::before {
     margin: 8px 0;
 }
 
-#room-id-input {
+#room-id-input,
+#player-name-input {
     width: 100%;
     padding: 16px 20px;
     border: 2px solid var(--light);
     border-radius: var(--border-radius-lg);
     font-size: 1.125em;
-    text-align: center;
-    letter-spacing: 3px;
-    text-transform: uppercase;
     margin-bottom: 20px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: 'Courier New', monospace;
     font-weight: 600;
     background: var(--white);
     color: var(--dark);
 }
 
-#room-id-input:focus {
+#room-id-input {
+    text-align: center;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+}
+
+#player-name-input {
+    text-align: left;
+    letter-spacing: 0.01em;
+    font-family: inherit;
+}
+
+#room-id-input:focus,
+#player-name-input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
     transform: translateY(-1px);
 }
 
-#room-id-input::placeholder {
+#room-id-input::placeholder,
+#player-name-input::placeholder {
     color: var(--gray);
     font-weight: 400;
 }
@@ -400,6 +501,11 @@ body::before {
     border: 1px solid rgba(251, 191, 36, 0.2);
     position: relative;
     overflow: hidden;
+}
+
+.waiting-names {
+    font-weight: 700;
+    color: #713f12;
 }
 
 .waiting-room::before {
@@ -952,6 +1058,15 @@ body::before {
     
     .room-content header h2 {
         font-size: 1.875em;
+    }
+
+    .room-content header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .room-subtitle {
+        max-width: none;
     }
     
     .room-content {
