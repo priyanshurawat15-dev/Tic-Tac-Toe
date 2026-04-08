@@ -166,6 +166,7 @@ class NetworkManager {
     }
 
     createRoom(playerName) {
+        this.roomId = null;
         this.send({ type: 'create_room', playerName });
     }
 
@@ -414,6 +415,7 @@ class TicTacToeGame {
 
     handleRoomCreated(roomId) {
         this.roomId = roomId;
+        this.network.roomId = roomId;
         document.getElementById('generated-room-id').textContent = roomId;
         document.getElementById('room-id-display').classList.remove('hidden');
         document.getElementById('waiting-room-id').textContent = roomId;
@@ -452,6 +454,8 @@ class TicTacToeGame {
     handleRoomJoined(roomId, playerSymbol, players = this.players) {
         this.roomId = roomId;
         this.playerSymbol = playerSymbol;
+        this.network.roomId = roomId;
+        this.network.playerSymbol = playerSymbol;
         this.players = { ...this.players, ...players };
         document.getElementById('waiting-room-id').textContent = roomId;
         document.getElementById('waiting-player-name').textContent = this.playerName || this.players[playerSymbol] || 'Player';
@@ -461,6 +465,7 @@ class TicTacToeGame {
 
     handleGameStart(playerSymbol, players = this.players) {
         this.playerSymbol = playerSymbol;
+        this.network.playerSymbol = playerSymbol;
         this.players = { ...this.players, ...players };
         this.gameMode = GameMode.ONLINE;
         this.resetGame();
